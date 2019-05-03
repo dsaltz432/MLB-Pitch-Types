@@ -8,7 +8,6 @@ import plotly
 import plotly.graph_objs as go
 from sklearn.feature_selection import VarianceThreshold
 import seaborn as sns
-import numpy as np
 from kneed import KneeLocator
 
 
@@ -114,16 +113,6 @@ def analyze_correlation(clustered, p_throws, type_of_batters):
         tick.set_fontsize(10)
     plt.title("Correlation Matrix for {} vs. {}".format(p_throws, type_of_batters))
     plt.show()
-
-
-def get_redundant_pairs(df):
-    """Get diagonal and lower triangular pairs of correlation matrix"""
-    pairs_to_drop = set()
-    for i in range(0, df.shape[1]):
-        for j in range(0, i+1):
-            pairs_to_drop.add((df.columns[i], df.columns[j]))
-    return pairs_to_drop
-
 
 
 # pca = PCA(n_components=3)

@@ -15,9 +15,9 @@ def main():
     # scraper.generate_full_pitches_table()
 
     # 2. Data Manipulation
-    # data_manipulator.generate_weighted_totals_table()
-    # data_manipulator.generate_pitch_frequencies_table()
-    # data_manipulator.create_normalized_table()
+    data_manipulator.generate_weighted_totals_table()
+    data_manipulator.generate_pitch_frequencies_table()
+    data_manipulator.create_normalized_table()
 
     # 3. Clustering
     p_throws = "R"

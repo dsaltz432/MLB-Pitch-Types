@@ -1,5 +1,4 @@
 import sqlite3
-from sqlite3 import Error
 import logging
 import constants
 
@@ -14,7 +13,7 @@ def create_connection():
     try:
         conn = sqlite3.connect(constants.DB_FILE_NAME)
         return conn
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
 
     return None
@@ -28,7 +27,7 @@ def create_connection_to_pitch_fx_db():
     try:
         conn = sqlite3.connect(constants.PITCH_FX_DB_FILE_NAME)
         return conn
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
 
     return None
@@ -52,7 +51,7 @@ def create_urls_table(conn):
                                         ); """
         create_table(conn, sql_create_urls_table)
 
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
 
     return None
@@ -84,7 +83,7 @@ def create_full_pitches_table(conn):
                                                 ); """
         create_table(conn, sql_create_full_pitches_table)
 
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
 
     return None
@@ -114,7 +113,7 @@ def create_pitch_frequencies_table(conn):
                                                 ); """
         create_table(conn, sql_create_pitch_frequencies_table)
 
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
 
     return None
@@ -142,7 +141,7 @@ def insert_rows_into_urls_table(url_table_rows):
         logging.info("inserted {} rows into table".format(len(url_table_rows)))
         return True
 
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
         return False
 
@@ -170,7 +169,7 @@ def insert_rows_into_full_pitches_table(full_pitches_table_rows):
         logging.info("inserted {} rows into table".format(len(full_pitches_table_rows)))
         return True
 
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
         return False
 
@@ -185,7 +184,7 @@ def create_table(conn, create_table_sql):
         cursor = conn.cursor()
         cursor.execute(create_table_sql)
         cursor.close()
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
 
 
@@ -209,6 +208,6 @@ def get_data_from_urls_table(year, month):
         conn.close()
         return rows
 
-    except Error as e:
+    except sqlite3.Error as e:
         logging.info(e)
         return None
