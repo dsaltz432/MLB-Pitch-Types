@@ -100,19 +100,16 @@ def create_pitch_frequencies_table(conn):
                                                     p_throws            TEXT    NOT NULL,
                                                     type_of_batters     TEXT    NOT NULL,
                                                     percent_ch          REAL    NOT NULL,
-                                                    percent_cs          REAL    NOT NULL,
                                                     percent_cu          REAL    NOT NULL,
                                                     percent_fa          REAL    NOT NULL,
                                                     percent_fc          REAL    NOT NULL,
                                                     percent_ff          REAL    NOT NULL,
-                                                    percent_fo          REAL    NOT NULL,
                                                     percent_fs          REAL    NOT NULL,
                                                     percent_ft          REAL    NOT NULL,
-                                                    percent_kc          REAL    NOT NULL,
-                                                    percent_kn          REAL    NOT NULL,
-                                                    percent_sb          REAL    NOT NULL,
                                                     percent_si          REAL    NOT NULL,
                                                     percent_sl          REAL    NOT NULL,
+                                                    percent_other       REAL    NOT NULL,
+                                                    velo_index          REAL    NOT NULL,
                                                     PRIMARY KEY(pitcher_id, p_throws, type_of_batters)
                                                 ); """
         create_table(conn, sql_create_pitch_frequencies_table)

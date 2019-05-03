@@ -2,3 +2,8 @@ beautifulsoup4
 requests
 pandas
 pandasql
+sklearn
+matplotlib
+plotly
+seaborn
+kneed

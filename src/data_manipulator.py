@@ -1,5 +1,7 @@
 import pandas
+from sklearn.preprocessing import MinMaxScaler
 import db_utils
+import constants
 
 
 def generate_weighted_totals_table():
@@ -54,11 +56,11 @@ def generate_weighted_totals_table():
     weighted_totals.to_sql("weighted_totals", conn, if_exists="replace")
 
     # Filter out pitchers who have minimal appearances
-    min_total_count = 100
     cursor = conn.cursor()
-    cursor.execute("delete from weighted_totals where total_count < ?", (min_total_count,))
+    cursor.execute("delete from weighted_totals where total_count < ?", (constants.MINIMUM_TOTAL_PITCHES,))
     cursor.close()
 
+    conn.commit()
     conn.close()
 
 
@@ -73,28 +75,28 @@ def generate_pitch_frequencies_table():
 
     pitch_frequencies_rows = []
     for (pitcher_id, p_throws, type_of_batters) in rows:
-        percent_ch = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "CH")
-        percent_cs = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "CS")
-        percent_cu = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "CU")
-        percent_fa = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "FA")
-        percent_fc = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "FC")
-        percent_ff = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "FF")
-        percent_fo = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "FO")
-        percent_fs = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "FS")
-        percent_ft = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "FT")
-        percent_kc = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "KC")
-        percent_kn = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "KN")
-        percent_sb = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "SB")
-        percent_si = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "SI")
-        percent_sl = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, "SL")
+        row = [pitcher_id, p_throws, type_of_batters]
 
-        pitch_frequencies_rows.append((pitcher_id, p_throws, type_of_batters, percent_ch, percent_cs, percent_cu,
-                                       percent_fa, percent_fc, percent_ff, percent_fo, percent_fs, percent_ft,
-                                       percent_kc, percent_kn, percent_sb, percent_si, percent_sl))
+        # Add a column for each of these pitch_type_codes
+        for pitch_type_code in ["CH", "CU", "FA", "FC", "FF", "FS", "FT", "SI", "SL"]:
+            percent_for_type = get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, pitch_type_code)
+            row.append(percent_for_type)
 
-    sql = "insert into pitch_frequencies (pitcher_id, p_throws, type_of_batters, percent_ch, percent_cs, percent_cu," \
-          " percent_fa, percent_fc, percent_ff, percent_fo, percent_fs, percent_ft, percent_kc, percent_kn," \
-          " percent_sb, percent_si, percent_sl) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        # These pitches are thrown very infrequently - they can be combined
+        percent_other = 0.0
+        for pitch_type_code in ["SB", "FO", "KN", "CS", "KC"]:
+            percent_other += get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, pitch_type_code)
+        row.append(percent_other)
+
+        # Add velo index
+        row.append(get_velo_index(conn, pitcher_id, p_throws, type_of_batters))
+
+        # Add row to list
+        pitch_frequencies_rows.append(row)
+
+    sql = "insert into pitch_frequencies (pitcher_id, p_throws, type_of_batters, percent_ch, percent_cu, percent_fa," \
+          " percent_fc, percent_ff, percent_fs, percent_ft, percent_si, percent_sl, percent_other, velo_index)" \
+          " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
     cursor = conn.cursor()
     cursor.executemany(sql, pitch_frequencies_rows)
@@ -104,9 +106,9 @@ def generate_pitch_frequencies_table():
 
 def get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, pitch_type_code):
     cursor = conn.cursor()
-    cursor.execute("select pitch_type_total/total_count from weighted_totals where pitcher_id = {}"
-                   " and p_throws = %s and type_of_batters = %s and pitch_type_code = %s"
-                   .format(pitcher_id, p_throws, type_of_batters, pitch_type_code))
+    cursor.execute("select pitch_type_total/total_count from weighted_totals where pitcher_id = ?"
+                   " and p_throws = ? and type_of_batters = ? and pitch_type_code = ?",
+                   [pitcher_id, p_throws, type_of_batters, pitch_type_code])
 
     result = cursor.fetchone()
 
@@ -119,11 +121,26 @@ def get_pitch_frequency(conn, pitcher_id, p_throws, type_of_batters, pitch_type_
     return percent_thrown
 
 
-# We want to divide the dataset into 4 parts: RHP vs. RHB, RHP vs. LHB, LHP vs. RHB, LHP vs. LHB
-# def divide_data_by_dexterity():
-#     x = 1
-    # totals_LvL = pandas.read_sql_query("select * from weighted_totals where p_throws='L' and type_of_batters='LHB';", conn)
-    # totals_LvR = pandas.read_sql_query("select * from weighted_totals where p_throws='L' and type_of_batters='LHB';", conn)
-    # totals_RvL = pandas.read_sql_query("select * from weighted_totals where p_throws='R' and type_of_batters='RHB';", conn)
-    # totals_RvR = pandas.read_sql_query("select * from weighted_totals where p_throws='R' and type_of_batters='RHB';", conn)
+def get_velo_index(conn, pitcher_id, p_throws, type_of_batters):
+    cursor = conn.cursor()
+    cursor.execute("select max(velo_index) from (select avg(velo) as velo_index"
+                   " from weighted_totals where pitcher_id = ?"
+                   " and p_throws = ? and type_of_batters = ? "
+                   "group by pitch_type_code, pitcher_id, p_throws, type_of_batters);",
+                   [pitcher_id, p_throws, type_of_batters])
 
+    velo_index = cursor.fetchone()[0]
+    cursor.close()
+    return velo_index
+
+
+def create_normalized_table():
+    conn = db_utils.create_connection()
+    df = pandas.read_sql_query("select * from pitch_frequencies;", conn)
+    fields_to_scale = ["percent_ch", "percent_cu", "percent_fa", "percent_fc", "percent_ff",
+                       "percent_fs", "percent_ft", "percent_si", "percent_sl", "percent_other", "velo_index"]
+    scaler = MinMaxScaler()
+    df[fields_to_scale] = scaler.fit_transform(df[fields_to_scale])
+    df.to_sql("normalized", conn, if_exists="replace")
+    conn.commit()
+    conn.close()
