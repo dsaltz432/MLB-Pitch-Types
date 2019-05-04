@@ -65,17 +65,20 @@ def run_kmeans(df, k):
 
 def plot_clusters_heatmap(clustered, k, p_throws, type_of_batters):
     grouped = clustered.groupby(['cluster'], sort=True).mean().round(3)
+    plt.figure(figsize=(14, 8))
+    fig = sns.heatmap(grouped, annot=True, fmt=".2f", cmap='coolwarm')
 
     y_values = []
     for i in range(0, k):
         y_values.append("Cluster {}".format(i))
+    fig.set_yticklabels(y_values)
 
-    data = [go.Heatmap(z=grouped.values.tolist(), y=y_values, x=grouped.columns, colorscale='Viridis')]
-    layout = go.Layout(title="Average Clusters for {} vs. {}".format(p_throws, type_of_batters))
-    fig = go.Figure(data=data, layout=layout)
+    for tick in fig.get_xticklabels():
+        tick.set_rotation(35)
+        tick.set_fontsize(10)
 
-    file_name = "../output/heatmap-{}_vs_{}.html".format(p_throws, type_of_batters)
-    plotly.offline.plot(fig, filename=file_name)
+    plt.title("Cluster Centers for {} vs. {}".format(p_throws, type_of_batters))
+    plt.show()
 
 
 def analyze_variance(clustered, p_throws, type_of_batters):
@@ -106,7 +109,7 @@ def analyze_correlation(clustered, p_throws, type_of_batters):
     df = clustered.drop(["cluster"], axis=1)
 
     # Plot heat map
-    sns.set(rc={'figure.figsize': (12, 7)})
+    plt.figure(figsize=(12, 7))
     fig = sns.heatmap(df.corr(), annot=True, fmt=".2f")
     for tick in fig.get_xticklabels():
         tick.set_rotation(35)
