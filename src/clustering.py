@@ -9,6 +9,9 @@ import plotly.graph_objs as go
 from sklearn.feature_selection import VarianceThreshold
 import seaborn as sns
 from kneed import KneeLocator
+from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA as sklearnPCA
+import numpy as np
 
 
 logger = logging.getLogger(constants.LOGGER_NAME)
@@ -118,7 +121,57 @@ def analyze_correlation(clustered, p_throws, type_of_batters):
     plt.show()
 
 
-# pca = PCA(n_components=3)
-# principalComponents = pca.fit_transform(df)
-# principalDf = pandas.DataFrame(data = principalComponents, columns = ['principal component 1', 'principal component 2', 'principal component 3'])
+def analyze_pca(clustered, p_throws, type_of_batters):
+
+    # X = iris.data
+    y = clustered['cluster']
+
+    # Drop cluster field
+    X = clustered.drop(["cluster"], axis=1)
+
+    # pca = PCA(0.90)
+    # pca.fit(X)
+
+    # transformed = pca.transform(X)
+    # print("original shape:   ", X.shape)
+    # print("transformed shape:", transformed.shape)
+    #
+    # print("components: ")
+    # print(pca.components_)
+    # print("Explained variance: ")
+    # print(pca.explained_variance_)
+    #
+    # plt.plot(np.cumsum(pca.explained_variance_ratio_))
+    # plt.xlabel('number of components')
+    # plt.ylabel('cumulative explained variance')
+    # plt.show()
+
+    pca = PCA()
+    pca.fit(X, y)
+    x_new = pca.transform(X)
+
+    plt.xlim(-1, 1)
+    plt.ylim(-1, 1)
+    plt.xlabel("PC{}".format(1))
+    plt.ylabel("PC{}".format(2))
+    plt.grid()
+
+    score = x_new[:, 0:2]
+    coeff = np.transpose(pca.components_[0:2, :])
+    labels = None
+
+    xs = score[:, 0]
+    ys = score[:, 1]
+    scalex = 1.0/(xs.max() - xs.min())
+    scaley = 1.0/(ys.max() - ys.min())
+    plt.scatter(xs * scalex, ys * scaley, c=y)
+    for i in range(coeff.shape[0]):
+        plt.arrow(0, 0, coeff[i, 0], coeff[i, 1], color='r', alpha=0.5)
+        if labels is None:
+            plt.text(coeff[i, 0] * 1.15, coeff[i, 1] * 1.15, "Var"+str(i+1), color='g', ha='center', va='center')
+        else:
+            plt.text(coeff[i, 0] * 1.15, coeff[i, 1] * 1.15, labels[i], color='g', ha='center', va='center')
+
+    plt.show()
+
 

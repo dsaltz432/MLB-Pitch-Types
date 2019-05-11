@@ -49,17 +49,22 @@ def generate_weighted_totals_table():
 
     # Add p_throws as a column - pull from pitchFx.db database
     pitch_fx_conn = db_utils.create_connection_to_pitch_fx_db()
-    weighted_totals = pandas.merge(weighted_totals,
-                                   pandas.read_sql_query("select distinct pitcher as pitcher_id, p_throws from atbat;",
-                                                         pitch_fx_conn))
+    weighted_totals = pandas.merge(
+        weighted_totals,
+        pandas.read_sql_query("select distinct pitcher as pitcher_id, p_throws from atbat;", pitch_fx_conn))
     pitch_fx_conn.close()
     weighted_totals.to_sql("weighted_totals", conn, if_exists="replace")
 
+    conn.commit()
+    conn.close()
+
+
+def filter_out_pitchers():
     # Filter out pitchers who have minimal appearances
+    conn = db_utils.create_connection()
     cursor = conn.cursor()
     cursor.execute("delete from weighted_totals where total_count < ?", (constants.MINIMUM_TOTAL_PITCHES,))
     cursor.close()
-
     conn.commit()
     conn.close()
 
@@ -139,8 +144,7 @@ def create_normalized_table():
     df = pandas.read_sql_query("select * from pitch_frequencies;", conn)
     fields_to_scale = ["percent_ch", "percent_cu", "percent_fa", "percent_fc", "percent_ff",
                        "percent_fs", "percent_ft", "percent_si", "percent_sl", "percent_other", "velo_index"]
-    scaler = MinMaxScaler()
-    df[fields_to_scale] = scaler.fit_transform(df[fields_to_scale])
+    df[fields_to_scale] = MinMaxScaler().fit_transform(df[fields_to_scale])
     df.to_sql("normalized", conn, if_exists="replace")
     conn.commit()
     conn.close()
