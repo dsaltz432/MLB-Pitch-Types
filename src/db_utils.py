@@ -5,13 +5,13 @@ import constants
 logger = logging.getLogger(constants.LOGGER_NAME)
 
 
-def create_connection():
+def create_brooks_baseball_db_connection():
     """ create a database connection to the SQLite database
-        specified by constants.DB_FILE_NAME
+        specified by constants.BROOKS_BASEBALL_DB_NAME
     :return: Connection object or None
     """
     try:
-        conn = sqlite3.connect(constants.DB_FILE_NAME)
+        conn = sqlite3.connect(constants.BROOKS_BASEBALL_DB_NAME)
         return conn
     except sqlite3.Error as e:
         logging.info(e)
@@ -19,13 +19,27 @@ def create_connection():
     return None
 
 
-def create_connection_to_pitch_fx_db():
+def create_combined_db_connection():
     """ create a database connection to the SQLite database
-        specified by constants.PITCH_FX_DB_FILE_NAME
+        specified by constants.COMBINED_DB_NAME
     :return: Connection object or None
     """
     try:
-        conn = sqlite3.connect(constants.PITCH_FX_DB_FILE_NAME)
+        conn = sqlite3.connect(constants.COMBINED_DB_NAME)
+        return conn
+    except sqlite3.Error as e:
+        logging.info(e)
+
+    return None
+
+
+def create_connection_to_mlb_gameday_db():
+    """ create a database connection to the SQLite database
+        specified by constants.MLB_GAMEDAY_DB_NAME
+    :return: Connection object or None
+    """
+    try:
+        conn = sqlite3.connect(constants.MLB_GAMEDAY_DB_NAME)
         return conn
     except sqlite3.Error as e:
         logging.info(e)
@@ -38,17 +52,17 @@ def create_urls_table(conn):
         :param conn: the Connection object
     """
     try:
-        sql_create_urls_table = """ CREATE TABLE IF NOT EXISTS urls (
-                                            url                   TEXT  NOT NULL,
-                                            expanded_table_url    TEXT  NOT NULL,
-                                            pitcher_id            INT   NOT NULL,
-                                            pitcher_name          TEXT  NOT NULL,
-                                            game_id               TEXT  NOT NULL,
-                                            day                   INT   NOT NULL,
-                                            month                 INT   NOT NULL,
-                                            year                  TEXT  NOT NULL,
-                                            PRIMARY KEY(pitcher_id, game_id) 
-                                        ); """
+        sql_create_urls_table = """ 
+            CREATE TABLE IF NOT EXISTS urls 
+               (url             TEXT  NOT NULL,
+                pitcher_id       INT   NOT NULL,
+                pitcher_name     TEXT  NOT NULL,
+                game_id          TEXT  NOT NULL,
+                day              INT   NOT NULL,
+                month            INT   NOT NULL,
+                year             TEXT  NOT NULL,
+                PRIMARY KEY(pitcher_id, game_id) 
+             ); """
         create_table(conn, sql_create_urls_table)
 
     except sqlite3.Error as e:
@@ -62,56 +76,27 @@ def create_full_pitches_table(conn):
         :param conn: the Connection object
     """
     try:
-        sql_create_full_pitches_table = """ CREATE TABLE IF NOT EXISTS full_pitches (
-                                                    pitcher_id          INT     NOT NULL,
-                                                    game_id             TEXT    NOT NULL,
-                                                    type_of_batters     TEXT    NOT NULL,
-                                                    type_of_data        TEXT    NOT NULL,
-                                                    pitch_type_code     TEXT    NOT NULL,
-                                                    pitch_type_desc     TEXT    NOT NULL,
-                                                    velo                REAL    NOT NULL,
-                                                    h_break             REAL    NOT NULL,
-                                                    v_break             REAL    NOT NULL,
-                                                    count               REAL    NOT NULL,
-                                                    strikes             REAL    NOT NULL,
-                                                    swings              REAL    NOT NULL,
-                                                    whiffs              REAL    NOT NULL,
-                                                    bib                 REAL    NOT NULL,
-                                                    snip                REAL    NOT NULL,
-                                                    lwts                REAL    NOT NULL,
-                                                    PRIMARY KEY(pitcher_id, game_id, pitch_type_code, type_of_batters) 
-                                                ); """
+        sql_create_full_pitches_table = """ 
+            CREATE TABLE IF NOT EXISTS full_pitches 
+               (pitcher_id          INT     NOT NULL,
+                game_id             TEXT    NOT NULL,
+                type_of_batters     TEXT    NOT NULL,
+                type_of_data        TEXT    NOT NULL,
+                pitch_type_code     TEXT    NOT NULL,
+                pitch_type_desc     TEXT    NOT NULL,
+                velo                REAL    NOT NULL,
+                h_break             REAL    NOT NULL,
+                v_break             REAL    NOT NULL,
+                count               REAL    NOT NULL,
+                strikes             REAL    NOT NULL,
+                swings              REAL    NOT NULL,
+                whiffs              REAL    NOT NULL,
+                bib                 REAL    NOT NULL,
+                snip                REAL    NOT NULL,
+                lwts                REAL    NOT NULL,
+                PRIMARY KEY(pitcher_id, game_id, pitch_type_code, type_of_batters) 
+            ); """
         create_table(conn, sql_create_full_pitches_table)
-
-    except sqlite3.Error as e:
-        logging.info(e)
-
-    return None
-
-
-def create_pitch_frequencies_table(conn):
-    """ create pitch_frequencies table if it doesn't exist already
-        :param conn: the Connection object
-    """
-    try:
-        sql_create_pitch_frequencies_table = """ CREATE TABLE IF NOT EXISTS pitch_frequencies (
-                                                    pitcher_id          INT     NOT NULL,
-                                                    p_throws            TEXT    NOT NULL,
-                                                    type_of_batters     TEXT    NOT NULL,
-                                                    percent_ch          REAL    NOT NULL,
-                                                    percent_cu          REAL    NOT NULL,
-                                                    percent_fa          REAL    NOT NULL,
-                                                    percent_fc          REAL    NOT NULL,
-                                                    percent_ff          REAL    NOT NULL,
-                                                    percent_fs          REAL    NOT NULL,
-                                                    percent_ft          REAL    NOT NULL,
-                                                    percent_si          REAL    NOT NULL,
-                                                    percent_sl          REAL    NOT NULL,
-                                                    percent_other       REAL    NOT NULL,
-                                                    velo_index          REAL    NOT NULL,
-                                                    PRIMARY KEY(pitcher_id, p_throws, type_of_batters)
-                                                ); """
-        create_table(conn, sql_create_pitch_frequencies_table)
 
     except sqlite3.Error as e:
         logging.info(e)
@@ -121,7 +106,7 @@ def create_pitch_frequencies_table(conn):
 
 def insert_rows_into_urls_table(url_table_rows):
 
-    conn = create_connection()
+    conn = create_brooks_baseball_db_connection()
 
     # Create urls table if it doesn't exist
     create_urls_table(conn)
@@ -148,7 +133,7 @@ def insert_rows_into_urls_table(url_table_rows):
 
 def insert_rows_into_full_pitches_table(full_pitches_table_rows):
 
-    conn = create_connection()
+    conn = create_brooks_baseball_db_connection()
 
     # Create full_pitches table if it doesn't exist
     create_full_pitches_table(conn)
@@ -198,7 +183,7 @@ def get_data_from_urls_table(year, month):
     logging.info("trying to select data from urls table")
 
     try:
-        conn = create_connection()
+        conn = create_brooks_baseball_db_connection()
         cursor = conn.cursor()
         cursor.execute("select url, pitcher_id, game_id from urls where year=? and month=?", (year, month,))
         rows = cursor.fetchall()
@@ -211,3 +196,23 @@ def get_data_from_urls_table(year, month):
     except sqlite3.Error as e:
         logging.info(e)
         return None
+
+
+def add_mlb_gameday_data_to_db():
+    conn = create_combined_db_connection()
+    query = open('../sql/compress_atbats.sql', 'r').read()
+    cursor = conn.cursor()
+    cursor.executescript(query)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def create_combined_db():
+    conn = create_combined_db_connection()
+    query = open('../sql/compress_full_pitches.sql', 'r').read()
+    cursor = conn.cursor()
+    cursor.executescript(query)
+    conn.commit()
+    cursor.close()
+    conn.close()

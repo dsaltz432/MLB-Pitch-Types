@@ -1,11 +1,11 @@
 
-# Using Adjusted Averages to Improve the Accuracy of Baseball Predictions
+# Clustering Pitcher Types to Better Predict Batter Outcomes
 
 
-## Table of Contents
-1. Web scrape pitcher types from Brooks Baseball
-2. Use these pitcher types to generate "types" of pitchers using clustering
-3. Create "adjusted" batting averages for every batter against each pitcher type
+## Summary
+The main analysis for this project is located within the jupyter notebook. As a prerequisite to running the notebook,
+I downloaded mlb-gameday data and web scraped BrooksBaseball data. Both of these steps can be replicated using 
+driver.py and  download_mlb_gameday.R. 
 
 
 ## Installation Instructions

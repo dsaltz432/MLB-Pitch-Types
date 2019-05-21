@@ -1,11 +1,14 @@
 
-PITCH_FX_DB_FILE_NAME = "../data/pitchRx.db"
-DB_FILE_NAME = "../data/database.db"
+MLB_GAMEDAY_DB_NAME \
+        = "/Users/danielsaltz/Documents/MLB_Project/data/mlb-gameday/mlb-gameday.db"
+BROOKS_BASEBALL_DB_NAME \
+        = "/Users/danielsaltz/Documents/MLB_Project/data/brooks-baseball/brooks-baseball-test.db"
+COMBINED_DB_NAME \
+        = "/Users/danielsaltz/Documents/MLB_Project/data/combined/combined.db"
+
 BASE_URL = "http://www.brooksbaseball.net/pfxVB/pfx.php"
-EXPANDED_TABLE_BASE_URL = "http://www.brooksbaseball.net/pfxVB/tabdel_expanded.php"
 LOGGER_NAME = "scrape.log"
 
-MINIMUM_TOTAL_PITCHES = 200
 
 MONTHS = ["3", "4", "5", "6", "7", "8", "9", "10", "11"]
 DAYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12",

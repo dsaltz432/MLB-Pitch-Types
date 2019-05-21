@@ -1,9 +1,10 @@
+numpy
+pandas
 beautifulsoup4
 requests
-pandas
-pandasql
-sklearn
-matplotlib
-plotly
-seaborn
 kneed
+seaborn
+sklearn
+plotly
+matplotlib
+scipy

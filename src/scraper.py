@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from multiprocessing import Pool
+import concurrent.futures
 import db_utils
 import logging
 import constants
@@ -9,57 +9,63 @@ logger = logging.getLogger(constants.LOGGER_NAME)
 
 
 def generate_urls_table():
-    # Create thread pool
-    pool = Pool(20)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        for year in constants.YEARS:
+            for month in constants.MONTHS:
+                logging.info("Started scraping for year={}, month={}".format(year, month))
 
-    for year in constants.YEARS:
-        for month in constants.MONTHS:
-            logging.info("Started scraping for year={}, month={}".format(year, month))
+                # Execute get_url_requests for every combination of year/month/day
+                params_list = [(year, month, day) for day in constants.DAYS]
 
-            # Execute get_url_requests for every combination of year/month/day
-            params = [(year, month, day) for day in constants.DAYS]
-            pool_results = pool.map(get_url_requests, params)
+                # Send request for each set of params
+                to_do = []
+                for params in params_list:
+                    future = executor.submit(get_url_requests, params)
+                    to_do.append(future)
 
-            # Flatten the list of lists into a single list of all results
-            url_table_rows = [item for sublist in pool_results for item in sublist]
-            logger.info("Found {} rows from pool_results".format(len(url_table_rows)))
+                # Append results to list as they complete
+                pool_results = []
+                for future in concurrent.futures.as_completed(to_do):
+                    pool_results.append(future.result())
 
-            # Write results to urls table in db
-            if url_table_rows:
-                db_utils.insert_rows_into_urls_table(url_table_rows)
+                # Flatten the list of lists into a single list of all results
+                url_table_rows = [item for sublist in pool_results for item in sublist]
 
-            logging.info("Finished scraping for year={}, month={}".format(year, month))
+                # Write non-empty results to full_pitches table
+                if url_table_rows:
+                    db_utils.insert_rows_into_urls_table(url_table_rows)
 
-    # Clean up thread pool
-    pool.terminate()
-    pool.join()
+                logging.info("Finished scraping for year={}, month={}".format(year, month))
 
 
 def generate_full_pitches_table():
-    # Create thread pool
-    pool = Pool(20)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        for year in constants.YEARS:
+            for month in constants.MONTHS:
+                logging.info("Started scraping for year={}, month={}".format(year, month))
 
-    for year in constants.YEARS:
-        for month in constants.MONTHS:
-            logging.info("Started scraping for year={}, month={}".format(year, month))
+                # Execute get_url_requests for all days in that year/month
+                params_list = db_utils.get_data_from_urls_table(year, month)
 
-            # Execute get_url_requests for all days in that year/month
-            params = db_utils.get_data_from_urls_table(year, month)
-            pool_results = pool.map(get_full_pitches_from_url, params)
+                # Send request for each set of params
+                to_do = []
+                for params in params_list:
+                    future = executor.submit(get_full_pitches_from_url, params)
+                    to_do.append(future)
 
-            # Flatten the list of lists into a single list of all results
-            full_pitches_table_rows = [item for sublist in pool_results for item in sublist]
-            logger.info("Found {} rows from pool_results".format(len(full_pitches_table_rows)))
+                # Append results to list as they complete
+                pool_results = []
+                for future in concurrent.futures.as_completed(to_do):
+                    pool_results.append(future.result())
 
-            # Write results to full_pitches table in db
-            if full_pitches_table_rows:
-                db_utils.insert_rows_into_full_pitches_table(full_pitches_table_rows)
+                # Flatten the list of lists into a single list of all results
+                full_pitches_table_rows = [item for sublist in pool_results for item in sublist]
 
-            logging.info("Finished scraping for year={}, month={}".format(year, month))
+                # Write non-empty results to full_pitches table
+                if full_pitches_table_rows:
+                    db_utils.insert_rows_into_full_pitches_table(full_pitches_table_rows)
 
-    # Clean up thread pool
-    pool.terminate()
-    pool.join()
+                logging.info("Finished scraping for year={}, month={}".format(year, month))
 
 
 def get_url_requests(params):
@@ -77,11 +83,7 @@ def get_url_requests(params):
                     url = "{}?month={}&day={}&year={}&game={}&pitchSel={}&prevDate={}&prevGame={}&league=mlb" \
                         .format(constants.BASE_URL, month, day, year, game_id, pitcher_id, month+day, game_id)
 
-                    expanded_table_url = "{}?pitchSel={}&game={}&s_type=&h_size=500&v_size=700" \
-                        .format(constants.EXPANDED_TABLE_BASE_URL, pitcher_id, game_id)
-
-                    url_table_rows.append((url, expanded_table_url, pitcher_id,
-                                           pitcher_name, game_id, day, month, year))
+                    url_table_rows.append((url, pitcher_id, pitcher_name, game_id, day, month, year))
 
     return url_table_rows
 
