@@ -1,5 +1,5 @@
 
-# Clustering Pitcher Types to Better Predict Batter Outcomes
+# Clustering Pitcher Types to Gain Insights on Batter Outcomes
 
 
 ## Summary
